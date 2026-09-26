@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SignOutButton } from "@/components/account/sign-out-button";
+import { PasskeySection } from "@/components/account/passkey-section";
 
 export const metadata = { title: "Account" };
 
@@ -33,13 +34,17 @@ export default async function AccountPage() {
     );
   }
 
-  const [addresses, regions] = await Promise.all([
+  const [addresses, regions, passkeys] = await Promise.all([
     prisma.address.findMany({
       where: { userId: user.id },
       orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
       include: { region: true },
     }),
     getRegions(),
+    prisma.passkey.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return (
@@ -58,6 +63,14 @@ export default async function AccountPage() {
           <SignOutButton />
         </CardContent>
       </Card>
+
+      <PasskeySection
+        passkeys={passkeys.map((passkey) => ({
+          id: passkey.id,
+          name: passkey.name,
+          createdAt: passkey.createdAt ? passkey.createdAt.toISOString() : null,
+        }))}
+      />
 
       <section className="mb-8 flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Addresses</h2>

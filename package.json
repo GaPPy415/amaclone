@@ -17,6 +17,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.7.6",
     "@prisma/client": "^6.19.3",
     "better-auth": "^1.7.6",
     "class-variance-authority": "^0.7.1",

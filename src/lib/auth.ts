@@ -1,8 +1,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin } from "better-auth/plugins";
+import { passkey } from "@better-auth/passkey";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+
+const publicUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
@@ -18,7 +21,14 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
   },
-  plugins: [admin()],
+  plugins: [
+    admin(),
+    passkey({
+      rpName: "amaclone",
+      rpID: new URL(publicUrl).hostname,
+      origin: publicUrl,
+    }),
+  ],
 });
 
 export async function getSession() {

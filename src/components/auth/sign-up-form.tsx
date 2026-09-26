@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Fingerprint } from "lucide-react";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { mergeGuestCart } from "@/app/actions/cart";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export function SignUpForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [createPasskey, setCreatePasskey] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +36,15 @@ export function SignUpForm() {
       setError(signUpError.message || "Failed to sign up");
       setLoading(false);
     } else {
+      if (createPasskey) {
+        try {
+          await authClient.passkey.addPasskey({ name: "Passkey" });
+        } catch {
+          toast.error(
+            "Account created, but the passkey could not be set up. You can add one from Account.",
+          );
+        }
+      }
       await mergeGuestCart();
       router.push(nextPath);
       router.refresh();
@@ -103,6 +114,24 @@ export function SignUpForm() {
         </div>
         <p className="text-xs text-muted-foreground">Passwords must be at least 8 characters.</p>
       </div>
+
+      <label className="flex items-start gap-2 rounded-md border border-border p-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-accent/40">
+        <input
+          type="checkbox"
+          checked={createPasskey}
+          onChange={(event) => setCreatePasskey(event.target.checked)}
+          className="mt-0.5"
+        />
+        <span className="flex flex-col">
+          <span className="flex items-center gap-1.5 font-medium">
+            <Fingerprint className="size-4" />
+            Create a passkey
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Sign in next time with your device fingerprint, face or PIN.
+          </span>
+        </span>
+      </label>
 
       <Button type="submit" size="lg" className="h-11 w-full mt-2" disabled={loading}>
         {loading ? "Creating account..." : "Create account"}

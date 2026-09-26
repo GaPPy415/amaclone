@@ -10,6 +10,7 @@ import {
 } from "@/lib/prefs";
 import { rateFor } from "@/lib/money";
 import { ProductCard } from "@/components/product/product-card";
+import { RemoveFromWishlistButton } from "@/components/wishlist/remove-from-wishlist-button";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Wishlist" };
@@ -71,12 +72,14 @@ export default async function WishlistPage() {
       <h1 className="mb-8 text-3xl font-bold">Your wishlist</h1>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            currencyCode={activeCurrency}
-            rateFromUsd={rateFromUsd}
-          />
+          <div key={product.id} className="flex flex-col gap-2">
+            <ProductCard
+              product={product}
+              currencyCode={activeCurrency}
+              rateFromUsd={rateFromUsd}
+            />
+            <RemoveFromWishlistButton productId={product.id} />
+          </div>
         ))}
       </div>
     </div>

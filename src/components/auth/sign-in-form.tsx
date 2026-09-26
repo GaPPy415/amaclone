@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Fingerprint } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { mergeGuestCart } from "@/app/actions/cart";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,25 @@ export function SignInForm() {
       await mergeGuestCart();
       router.push(nextPath);
       router.refresh();
+    }
+  };
+
+  const handlePasskey = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const { error: passkeyError } = await authClient.signIn.passkey();
+      if (passkeyError) {
+        setError(passkeyError.message || "Passkey sign-in failed");
+        setLoading(false);
+        return;
+      }
+      await mergeGuestCart();
+      router.push(nextPath);
+      router.refresh();
+    } catch {
+      setError("Passkey sign-in was cancelled or is unavailable on this device.");
+      setLoading(false);
     }
   };
 
@@ -88,6 +107,24 @@ export function SignInForm() {
 
       <Button type="submit" size="lg" className="h-11 w-full mt-2" disabled={loading}>
         {loading ? "Signing in..." : "Sign in"}
+      </Button>
+
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />
+        or
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="h-11 w-full"
+        disabled={loading}
+        onClick={handlePasskey}
+      >
+        <Fingerprint className="size-4" />
+        Sign in with a passkey
       </Button>
 
       <div className="mt-4 text-center text-sm">
