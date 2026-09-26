@@ -159,6 +159,41 @@ export async function listBrands(params: {
     .filter((value): value is string => typeof value === "string" && value.length > 0);
 }
 
+export async function getPriceBounds(params: {
+  regionId: string;
+  categoryPath?: string;
+  q?: string;
+  brand?: string;
+}): Promise<{ floorCents: number; ceilCents: number }> {
+  const where: Prisma.ProductWhereInput = {
+    isActive: true,
+    regions: { some: { regionId: params.regionId, available: true } },
+  };
+
+  if (params.categoryPath) {
+    where.category = { path: { startsWith: params.categoryPath } };
+  }
+
+  if (params.q) {
+    where.title = { contains: params.q, mode: "insensitive" };
+  }
+
+  if (params.brand) {
+    where.brand = params.brand;
+  }
+
+  const result = await prisma.product.aggregate({
+    where,
+    _min: { basePriceCents: true },
+    _max: { basePriceCents: true },
+  });
+
+  return {
+    floorCents: result._min.basePriceCents ?? 0,
+    ceilCents: result._max.basePriceCents ?? 0,
+  };
+}
+
 export async function getProductBySlug(slug: string, regionId: string) {
   return prisma.product.findUnique({
     where: { slug },

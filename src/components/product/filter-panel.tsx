@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PriceRangeSlider } from "@/components/product/price-range-slider";
 import {
   Select,
   SelectContent,
@@ -25,10 +24,14 @@ export function FilterPanel({
   brands,
   currencyCode,
   rateFromUsd,
+  priceFloorCents,
+  priceCeilCents,
 }: {
   brands: string[];
   currencyCode: string;
   rateFromUsd: number;
+  priceFloorCents: number;
+  priceCeilCents: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,61 +39,24 @@ export function FilterPanel({
   const sort = searchParams.get("sort") ?? "newest";
   const brand = searchParams.get("brand") ?? "all";
   const minRating = searchParams.get("minRating") ?? "";
+  const minPriceParam = searchParams.get("minPrice");
+  const maxPriceParam = searchParams.get("maxPrice");
 
-  const toDisplayPrice = (usdCents: string | null) =>
-    usdCents ? String(Math.round((Number(usdCents) / 100) * rateFromUsd)) : "";
-
-  const [minPrice, setMinPrice] = useState(() =>
-    toDisplayPrice(searchParams.get("minPrice")),
-  );
-  const [maxPrice, setMaxPrice] = useState(() =>
-    toDisplayPrice(searchParams.get("maxPrice")),
-  );
-
-  const push = (params: URLSearchParams) => {
+  const updateFilter = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set(key, value);
+    else params.delete(key);
     params.delete("page");
     const qs = params.toString();
     router.push(qs ? `?${qs}` : "?");
   };
 
-  const updateFilter = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-    push(params);
-  };
-
-  const toUsdCents = (value: string) => {
-    const amount = Number(value);
-    if (!value || Number.isNaN(amount) || amount < 0) return "";
-    return String(Math.round((amount / rateFromUsd) * 100));
-  };
-
-  const applyPrice = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    const min = toUsdCents(minPrice);
-    const max = toUsdCents(maxPrice);
-    if (min) params.set("minPrice", min);
-    else params.delete("minPrice");
-    if (max) params.set("maxPrice", max);
-    else params.delete("maxPrice");
-    push(params);
-  };
-
   const clearAll = () => {
-    setMinPrice("");
-    setMaxPrice("");
     router.push("?");
   };
 
   const hasFilters = Boolean(
-    brand !== "all" ||
-      minRating ||
-      searchParams.get("minPrice") ||
-      searchParams.get("maxPrice"),
+    brand !== "all" || minRating || minPriceParam || maxPriceParam,
   );
 
   return (
@@ -145,33 +111,13 @@ export function FilterPanel({
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium">Price ({currencyCode})</span>
-        <div className="flex items-center gap-2">
-          <Input
-            inputMode="numeric"
-            placeholder="Min"
-            value={minPrice}
-            aria-label="Minimum price"
-            className="h-9"
-            onChange={(event) => setMinPrice(event.target.value)}
-          />
-          <span className="text-muted-foreground">to</span>
-          <Input
-            inputMode="numeric"
-            placeholder="Max"
-            value={maxPrice}
-            aria-label="Maximum price"
-            className="h-9"
-            onChange={(event) => setMaxPrice(event.target.value)}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="secondary"
-          className="h-9 w-full"
-          onClick={applyPrice}
-        >
-          Apply price
-        </Button>
+        <PriceRangeSlider
+          key={`${minPriceParam ?? "min"}-${maxPriceParam ?? "max"}-${priceCeilCents}`}
+          floorCents={priceFloorCents}
+          ceilCents={priceCeilCents}
+          currencyCode={currencyCode}
+          rateFromUsd={rateFromUsd}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
