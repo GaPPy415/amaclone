@@ -43,6 +43,11 @@ export function AccountMenu() {
         <Link href="/wishlist" className="px-4 py-2 text-sm hover:bg-muted">
           Wishlist
         </Link>
+        {session.user.role === "admin" && (
+          <Link href="/admin" className="px-4 py-2 text-sm hover:bg-muted">
+            Admin
+          </Link>
+        )}
         <button
           onClick={async () => {
             await authClient.signOut();
