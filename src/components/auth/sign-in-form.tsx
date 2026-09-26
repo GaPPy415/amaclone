@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { mergeGuestCart } from "@/app/actions/cart";
 import { Button } from "@/components/ui/button";
 
 export function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,7 +32,8 @@ export function SignInForm() {
       setError(signInError.message || "Failed to sign in");
       setLoading(false);
     } else {
-      router.push("/");
+      await mergeGuestCart();
+      router.push(nextPath);
       router.refresh();
     }
   };

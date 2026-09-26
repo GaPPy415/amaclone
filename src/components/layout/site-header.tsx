@@ -6,9 +6,16 @@ import { RegionSelector } from "./region-selector";
 import { CurrencySelector } from "./currency-selector";
 import { AccountMenu } from "./account-menu";
 import { getRegions, getFxRates, getActiveRegion, getActiveCurrency } from "@/lib/prefs";
+import { getCartCount } from "@/lib/cart";
+import { getWishlistCount } from "@/lib/wishlist";
 
 export async function SiteHeader() {
-  const [regions, rates] = await Promise.all([getRegions(), getFxRates()]);
+  const [regions, rates, cartCount, wishlistCount] = await Promise.all([
+    getRegions(),
+    getFxRates(),
+    getCartCount(),
+    getWishlistCount(),
+  ]);
   const activeRegion = await getActiveRegion(regions);
   const activeCurrency = await getActiveCurrency(activeRegion.currencyCode);
 
@@ -32,12 +39,30 @@ export async function SiteHeader() {
 
             <AccountMenu />
 
-            <Link href="/wishlist" className="flex items-center gap-1 hover:text-primary transition-colors" aria-label="Wishlist">
+            <Link
+              href="/wishlist"
+              className="relative flex items-center gap-1 hover:text-primary transition-colors"
+              aria-label={`Wishlist (${wishlistCount} items)`}
+            >
               <Heart className="size-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
 
-            <Link href="/cart" className="flex items-center gap-1 hover:text-primary transition-colors" aria-label="Cart">
+            <Link
+              href="/cart"
+              className="relative flex items-center gap-1 hover:text-primary transition-colors"
+              aria-label={`Cart (${cartCount} items)`}
+            >
               <ShoppingCart className="size-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {cartCount}
+                </span>
+              )}
             </Link>
 
             <ThemeToggle />

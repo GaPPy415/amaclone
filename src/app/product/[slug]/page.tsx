@@ -8,6 +8,9 @@ import { StarRating } from "@/components/product/star-rating";
 import { Price } from "@/components/product/price";
 import { ProductCard } from "@/components/product/product-card";
 import { rateFor } from "@/lib/money";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
+import { WishlistButton } from "@/components/wishlist/wishlist-button";
+import { isWishlisted } from "@/lib/wishlist";
 
 export default async function ProductPage({
   params,
@@ -31,9 +34,10 @@ export default async function ProductPage({
   const categoryData = await getCategoryByPath(product.category.path);
   const ancestors = categoryData?.ancestors ?? [];
 
-  const [reviews, boughtTogether] = await Promise.all([
+  const [reviews, boughtTogether, wishlisted] = await Promise.all([
     getProductReviews(product.id, 5),
     getFrequentlyBoughtTogether(product.id, activeRegion.id),
+    isWishlisted(product.id),
   ]);
 
   const region = product.regions[0];
@@ -122,6 +126,16 @@ export default async function ProductPage({
                 </span>
               )}
             </div>
+
+            <AddToCartButton
+              productId={product.id}
+              disabled={!isAvailable || !inStock}
+            />
+            <WishlistButton
+              productId={product.id}
+              initiallyWishlisted={wishlisted}
+              nextPath={`/product/${product.slug}`}
+            />
           </div>
         </div>
       </div>
