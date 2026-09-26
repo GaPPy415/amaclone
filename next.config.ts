@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  outputFileTracingIncludes: {
+    devIndicators: false,
+	outputFileTracingIncludes: {
     "/**": ["./node_modules/.prisma/client/**"],
   },
   images: {

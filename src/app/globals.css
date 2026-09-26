@@ -140,6 +140,16 @@
   html {
     @apply font-sans;
   }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    letter-spacing: inherit;
+  }
+  option {
+    font-family: inherit;
+  }
   h1,
   h2,
   h3,

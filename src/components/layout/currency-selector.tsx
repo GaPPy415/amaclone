@@ -1,8 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Coins } from "lucide-react";
 import { setCurrency } from "@/app/actions/prefs";
 import { FxRateRow } from "@/lib/money";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function CurrencySelector({
   rates,
@@ -14,20 +23,31 @@ export function CurrencySelector({
   const router = useRouter();
 
   return (
-    <select
-      className="bg-transparent text-nav-foreground border-none outline-none cursor-pointer text-sm font-medium"
+    <Select
       value={currentCode}
-      onChange={async (e) => {
-        await setCurrency(e.target.value);
+      onValueChange={async (value) => {
+        await setCurrency(value);
         router.refresh();
       }}
-      aria-label="Select currency"
     >
-      {rates.map((r) => (
-        <option key={r.currencyCode} value={r.currencyCode} className="text-foreground bg-background">
-          {r.currencyCode} ({r.symbol})
-        </option>
-      ))}
-    </select>
+      <SelectTrigger
+        aria-label="Display currency"
+        className="h-9 w-auto gap-2 border-none bg-transparent px-2 text-nav-foreground shadow-none hover:bg-white/10 focus-visible:ring-0 dark:bg-transparent dark:hover:bg-white/10"
+      >
+        <Coins className="size-4 shrink-0" />
+        <span className="text-xs font-medium uppercase tracking-wide text-nav-foreground/60">
+          Currency
+        </span>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="end">
+        <SelectLabel>Display prices in</SelectLabel>
+        {rates.map((rate) => (
+          <SelectItem key={rate.currencyCode} value={rate.currencyCode}>
+            {rate.currencyCode} ({rate.symbol})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

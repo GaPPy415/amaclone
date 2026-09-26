@@ -76,6 +76,12 @@ White on the pastel primary fails 4.5:1. Do not "fix" it to white.
 
 ## 6. Component rules
 
+- **Form controls inherit the page font.** A global base rule sets `font: inherit` on
+  `input, select, textarea, button` (and `option`), because browsers otherwise fall back to a
+  UA default font for native controls — which is what made selects look serif. The region and
+  currency pickers in the header use the styled `Select` (Radix) rather than a naked native
+  `<select>`, with a visible icon + `Region` / `Currency` label so their purpose is obvious.
+
 - **Buttons:** one primary CTA per view; secondary actions visually subordinate; disabled =
   reduced opacity + `disabled` attr + no pointer.
 - **Product tile:** image (fixed aspect-ratio box, no CLS), title (2-line clamp + full text on
