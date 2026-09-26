@@ -39,6 +39,7 @@ export type ListProductsParams = {
   categoryPath?: string;
   q?: string;
   regionId: string;
+  brand?: string;
   minPrice?: number;
   maxPrice?: number;
   minRating?: number;
@@ -52,6 +53,7 @@ export async function listProducts(params: ListProductsParams) {
     categoryPath,
     q,
     regionId,
+    brand,
     minPrice,
     maxPrice,
     minRating,
@@ -83,6 +85,10 @@ export async function listProducts(params: ListProductsParams) {
       contains: q,
       mode: "insensitive",
     };
+  }
+
+  if (brand) {
+    where.brand = brand;
   }
 
   if (minPrice !== undefined || maxPrice !== undefined) {
@@ -120,6 +126,37 @@ export async function listProducts(params: ListProductsParams) {
   ]);
 
   return { rows, totalCount };
+}
+
+export async function listBrands(params: {
+  regionId: string;
+  categoryPath?: string;
+  q?: string;
+}): Promise<string[]> {
+  const where: Prisma.ProductWhereInput = {
+    isActive: true,
+    brand: { not: null },
+    regions: { some: { regionId: params.regionId, available: true } },
+  };
+
+  if (params.categoryPath) {
+    where.category = { path: { startsWith: params.categoryPath } };
+  }
+
+  if (params.q) {
+    where.title = { contains: params.q, mode: "insensitive" };
+  }
+
+  const rows = await prisma.product.findMany({
+    where,
+    distinct: ["brand"],
+    select: { brand: true },
+    orderBy: { brand: "asc" },
+  });
+
+  return rows
+    .map((row) => row.brand)
+    .filter((value): value is string => typeof value === "string" && value.length > 0);
 }
 
 export async function getProductBySlug(slug: string, regionId: string) {

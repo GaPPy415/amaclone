@@ -1,12 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { getCategoryByPath, listProducts, parseSort } from "@/lib/catalog";
+import { getCategoryByPath, listProducts, listBrands, parseSort } from "@/lib/catalog";
 import { getRegions, getFxRates, getActiveRegion, getActiveCurrency } from "@/lib/prefs";
 import { ProductGrid } from "@/components/product/product-grid";
 import { FilterPanel } from "@/components/product/filter-panel";
 import { rateFor } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
+
+function toNumber(value: string | string[] | undefined) {
+  if (typeof value !== "string" || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
 
 export default async function CategoryPage({
   params,
@@ -40,15 +46,26 @@ export default async function CategoryPage({
   const sp = await searchParams;
   const page = typeof sp.page === "string" ? parseInt(sp.page, 10) : 1;
   const sort = parseSort(sp.sort);
-  const minRating = typeof sp.minRating === "string" ? parseFloat(sp.minRating) : undefined;
+  const minRating = toNumber(sp.minRating);
+  const minPrice = toNumber(sp.minPrice);
+  const maxPrice = toNumber(sp.maxPrice);
+  const brand = typeof sp.brand === "string" && sp.brand ? sp.brand : undefined;
 
   const { rows, totalCount } = await listProducts({
     categoryPath: path,
     regionId: activeRegion.id,
+    brand,
     sort,
     minRating,
+    minPrice,
+    maxPrice,
     page,
     pageSize: 24,
+  });
+
+  const brands = await listBrands({
+    regionId: activeRegion.id,
+    categoryPath: path,
   });
 
   return (
@@ -81,14 +98,18 @@ export default async function CategoryPage({
               </ul>
             )}
           </div>
-          <FilterPanel />
+          <FilterPanel
+            brands={brands}
+            currencyCode={activeCurrency}
+            rateFromUsd={rateFromUsd}
+          />
         </aside>
 
         <div className="flex-1">
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-2xl font-bold">{category.name}</h1>
             <span className="text-sm text-muted-foreground">
-              {totalCount} results
+              {totalCount} {totalCount === 1 ? "result" : "results"}
             </span>
           </div>
 
