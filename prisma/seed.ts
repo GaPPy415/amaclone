@@ -4,6 +4,135 @@ import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
+type CategoryDef = { name: string; children?: CategoryDef[] };
+
+type ProductSeed = {
+  slug: string;
+  title: string;
+  description: string;
+  brand: string;
+  categoryId: string;
+  basePriceCents: number;
+  imageUrl: string;
+  featured: boolean;
+};
+
+type ProductRegionSeed = {
+  productId: string;
+  regionId: string;
+  available: boolean;
+  stock: number;
+  shippingDays: number;
+};
+
+type BundleSeed = { productAId: string; productBId: string; score: number };
+
+type ReviewSeed = {
+  productId: string;
+  userId: string;
+  rating: number;
+  title: string;
+  comment: string;
+};
+
+const brands = [
+  "Acme",
+  "Globex",
+  "Initech",
+  "Soylent",
+  "Umbrella",
+  "Massive Dynamic",
+  "Stark",
+  "Wayne",
+  "Aperture",
+  "Cyberdyne",
+  "Tyrell",
+  "Wonka",
+];
+
+const adjectives = [
+  "Pro",
+  "Max",
+  "Ultra",
+  "Lite",
+  "Plus",
+  "Elite",
+  "Essential",
+  "Advanced",
+  "Smart",
+  "Super",
+  "Compact",
+  "Signature",
+];
+
+const descriptionLeads = [
+  "Built for everyday use",
+  "Engineered for demanding buyers",
+  "A dependable pick for the whole household",
+  "Designed to deliver consistent results",
+  "Made for people who expect more from the basics",
+  "A straightforward upgrade over the entry-level option",
+];
+
+const descriptionFeatures = [
+  "durable materials",
+  "a compact footprint",
+  "long service life",
+  "straightforward setup",
+  "low running costs",
+  "a refined finish",
+  "a well-balanced spec",
+  "quiet operation",
+];
+
+const descriptionClosers = [
+  "Backed by our standard returns policy.",
+  "Ships from regional stock with tracked delivery.",
+  "Consistently rated by verified buyers.",
+  "Ready to use out of the box.",
+  "Covered for the first year against defects.",
+];
+
+const reviewComments = [
+  "Great product, highly recommend.",
+  "Not bad, but could be better.",
+  "Exactly what I was looking for.",
+  "Terrible quality, broke after a week.",
+  "Good value for the price.",
+  "Fast shipping and works perfectly.",
+  "I love this so much.",
+  "Decent, does the job.",
+  "Better than I expected for the money.",
+  "Would buy again without hesitation.",
+  "Arrived on time and well packaged.",
+  "The finish is nicer than the photos suggest.",
+  "Stopped working after two months.",
+  "Does what it says, nothing more.",
+  "Perfect for my setup.",
+  "Slightly smaller than I imagined.",
+  "Solid build, feels premium.",
+  "Wish it came with more accessories.",
+];
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function describeProduct(
+  title: string,
+  categoryName: string,
+  brand: string,
+  index: number,
+): string {
+  const lead = descriptionLeads[index % descriptionLeads.length];
+  const feature = descriptionFeatures[(index * 3) % descriptionFeatures.length];
+  const closer = descriptionClosers[(index * 5) % descriptionClosers.length];
+  return `${title} from ${brand} is part of our ${categoryName.toLowerCase()} range. ${lead}, with ${feature} and a specification that holds up to regular use. ${closer}`;
+}
+
 async function main() {
   if ((await prisma.product.count()) > 0) {
     console.log("Database already seeded. Exiting.");
@@ -12,7 +141,6 @@ async function main() {
 
   console.log("Starting seed...");
 
-  // 1. Regions & FxRates
   const regionsData = [
     { code: "US", name: "United States", currencyCode: "USD" },
     { code: "EU", name: "European Union", currencyCode: "EUR" },
@@ -21,11 +149,7 @@ async function main() {
   ];
 
   const regions = await Promise.all(
-    regionsData.map((r) =>
-      prisma.region.create({
-        data: r,
-      })
-    )
+    regionsData.map((region) => prisma.region.create({ data: region })),
   );
 
   const fxRatesData = [
@@ -36,26 +160,15 @@ async function main() {
   ];
 
   await Promise.all(
-    fxRatesData.map((fx) =>
-      prisma.fxRate.create({
-        data: fx,
-      })
-    )
+    fxRatesData.map((rate) => prisma.fxRate.create({ data: rate })),
   );
 
-  // 2. Categories
-  const categoriesDef = [
+  const categoriesDef: CategoryDef[] = [
     {
       name: "Electronics",
       children: [
-        {
-          name: "Computers",
-          children: [{ name: "Laptops" }, { name: "Desktops" }],
-        },
-        {
-          name: "Audio",
-          children: [{ name: "Headphones" }, { name: "Speakers" }],
-        },
+        { name: "Computers", children: [{ name: "Laptops" }, { name: "Desktops" }] },
+        { name: "Audio", children: [{ name: "Headphones" }, { name: "Speakers" }] },
       ],
     },
     {
@@ -100,43 +213,31 @@ async function main() {
     { name: "Baby" },
   ];
 
-  const slugify = (text: string) =>
-    text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
   const leafCategories: { id: string; name: string }[] = [];
   let maxDepth = 0;
   let categoryCount = 0;
 
   async function createCategory(
-    def: any,
+    def: CategoryDef,
     parentId: string | null,
     parentPath: string,
     position: number,
-    depth: number
-  ) {
+    depth: number,
+  ): Promise<void> {
     const slug = slugify(def.name);
     const path = parentPath ? `${parentPath}/${slug}` : slug;
-    const cat = await prisma.category.create({
-      data: {
-        name: def.name,
-        slug,
-        parentId,
-        path,
-        position,
-      },
+    const category = await prisma.category.create({
+      data: { name: def.name, slug, parentId, path, position },
     });
     categoryCount++;
     if (depth > maxDepth) maxDepth = depth;
 
     if (def.children && def.children.length > 0) {
       for (let i = 0; i < def.children.length; i++) {
-        await createCategory(def.children[i], cat.id, path, i, depth + 1);
+        await createCategory(def.children[i], category.id, path, i, depth + 1);
       }
     } else {
-      leafCategories.push({ id: cat.id, name: def.name });
+      leafCategories.push({ id: category.id, name: def.name });
     }
   }
 
@@ -144,126 +245,125 @@ async function main() {
     await createCategory(categoriesDef[i], null, "", i, 1);
   }
 
-  // 3. Products
-  const brands = ["Acme", "Globex", "Initech", "Soylent", "Umbrella", "Massive Dynamic", "Stark", "Wayne"];
-  const adjectives = ["Pro", "Max", "Ultra", "Lite", "Plus", "Elite", "Essential", "Advanced", "Smart", "Super"];
-  
-  const productsData: any[] = [];
+  const productsData: ProductSeed[] = [];
+  let productIndex = 0;
   let featuredCount = 0;
 
   for (const leaf of leafCategories) {
     for (let i = 1; i <= 10; i++) {
-      const brand = brands[Math.floor(Math.random() * brands.length)];
-      const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-      const title = `${brand} ${leaf.name.replace(/s$/, "")} ${adj} ${i}`;
-      const slug = slugify(title) + "-" + crypto.randomBytes(2).toString("hex");
-      const isFeatured = featuredCount < 12 && Math.random() > 0.8;
+      const brand = brands[productIndex % brands.length];
+      const adjective = adjectives[(productIndex * 7) % adjectives.length];
+      const singular = leaf.name.replace(/s$/, "");
+      const title = `${brand} ${singular} ${adjective} ${i}`;
+      const slug = `${slugify(title)}-${crypto.randomBytes(2).toString("hex")}`;
+      const isFeatured = featuredCount < 12 && productIndex % 9 === 0;
       if (isFeatured) featuredCount++;
 
       productsData.push({
         slug,
         title,
-        description: `Experience the best with the ${title}. Designed for ultimate performance and reliability. Perfect for your everyday needs.`,
+        description: describeProduct(title, leaf.name, brand, productIndex),
         brand,
         categoryId: leaf.id,
-        basePriceCents: Math.floor(Math.random() * 20000) + 999, // $9.99 to $209.99
+        basePriceCents: 999 + ((productIndex * 977) % 40000),
         imageUrl: `https://picsum.photos/seed/${slug}/600/600`,
         featured: isFeatured,
       });
+      productIndex++;
     }
   }
 
-  // Ensure exactly 12 featured if we missed it
-  while (featuredCount < 12) {
-    const p = productsData[Math.floor(Math.random() * productsData.length)];
-    if (!p.featured) {
-      p.featured = true;
+  let featuredFill = 0;
+  while (featuredCount < 12 && featuredFill < productsData.length) {
+    if (!productsData[featuredFill].featured) {
+      productsData[featuredFill].featured = true;
       featuredCount++;
     }
+    featuredFill++;
   }
 
-  const createdProducts = await Promise.all(
-    productsData.map((p) => prisma.product.create({ data: p }))
-  );
+  const createdProducts: { id: string; title: string; categoryId: string; basePriceCents: number; imageUrl: string }[] = [];
+  for (const product of productsData) {
+    const created = await prisma.product.create({ data: product });
+    createdProducts.push({
+      id: created.id,
+      title: created.title,
+      categoryId: created.categoryId,
+      basePriceCents: created.basePriceCents,
+      imageUrl: created.imageUrl,
+    });
+  }
 
-  // 4. ProductRegions
-  const productRegionsData: any[] = [];
-  for (const product of createdProducts) {
-    for (const region of regions) {
-      const available = Math.random() > 0.15;
+  const productRegionsData: ProductRegionSeed[] = [];
+  for (let pIdx = 0; pIdx < createdProducts.length; pIdx++) {
+    const product = createdProducts[pIdx];
+    for (let rIdx = 0; rIdx < regions.length; rIdx++) {
+      const region = regions[rIdx];
+      const available = (pIdx * 3 + rIdx * 5) % 7 !== 0;
       productRegionsData.push({
         productId: product.id,
         regionId: region.id,
         available,
-        stock: available ? Math.floor(Math.random() * 81) : 0,
-        shippingDays: Math.floor(Math.random() * 8) + 3, // 3 to 10
+        stock: available ? 1 + ((pIdx * 13 + rIdx * 7) % 80) : 0,
+        shippingDays: 3 + ((pIdx + rIdx * 2) % 8),
       });
     }
   }
   await prisma.productRegion.createMany({ data: productRegionsData });
 
-  // 5. Bundles
-  const bundlesData: any[] = [];
+  const bundlesData: BundleSeed[] = [];
   const bundlePairs = new Set<string>();
 
   for (const leaf of leafCategories) {
     const leafProducts = createdProducts.filter((p) => p.categoryId === leaf.id);
-    for (const product of leafProducts) {
-      const numBundles = Math.floor(Math.random() * 4) + 1; // 1 to 4
+    for (let i = 0; i < leafProducts.length; i++) {
+      const product = leafProducts[i];
+      const partnerCount = 1 + (i % 4);
       let added = 0;
-      const shuffled = [...leafProducts].sort(() => 0.5 - Math.random());
-      
-      for (const partner of shuffled) {
-        if (added >= numBundles) break;
+      for (let step = 1; step < leafProducts.length && added < partnerCount; step++) {
+        const partner = leafProducts[(i + step) % leafProducts.length];
         if (partner.id === product.id) continue;
-        
-        const pairKey1 = `${product.id}-${partner.id}`;
-        const pairKey2 = `${partner.id}-${product.id}`;
-        
-        if (!bundlePairs.has(pairKey1) && !bundlePairs.has(pairKey2)) {
-          bundlePairs.add(pairKey1);
-          bundlesData.push({
-            productAId: product.id,
-            productBId: partner.id,
-            score: Math.random() * 0.6 + 0.3, // 0.3 to 0.9
-          });
-          added++;
-        }
+        const forward = `${product.id}-${partner.id}`;
+        const backward = `${partner.id}-${product.id}`;
+        if (bundlePairs.has(forward) || bundlePairs.has(backward)) continue;
+        bundlePairs.add(forward);
+        bundlesData.push({
+          productAId: product.id,
+          productBId: partner.id,
+          score: Math.round((0.3 + ((i + step) % 7) * 0.1) * 100) / 100,
+        });
+        added++;
       }
     }
   }
   await prisma.bundle.createMany({ data: bundlesData });
 
-  // 6. Users & Accounts
   const usersToCreate = [
-    { email: "admin@amaclone.dev", name: "Store Admin", role: "admin", pass: "admin12345" },
-    { email: "shopper@amaclone.dev", name: "Sam Shopper", role: "user", pass: "shopper12345" },
+    { email: "admin@amaclone.dev", name: "Store Admin", role: "admin", password: "admin12345" },
+    { email: "shopper@amaclone.dev", name: "Sam Shopper", role: "user", password: "shopper12345" },
   ];
-
   for (let i = 1; i <= 8; i++) {
     usersToCreate.push({
       email: `demo${i}@amaclone.dev`,
       name: `Demo User ${i}`,
       role: "user",
-      pass: `demo${i}pass`,
+      password: `demo${i}pass`,
     });
   }
 
-  const createdUsers = [];
-  for (const u of usersToCreate) {
+  const createdUsers: { id: string; email: string }[] = [];
+  for (const candidate of usersToCreate) {
     const userId = crypto.randomUUID();
-    const hashedPassword = await hashPassword(u.pass);
-    
+    const hashedPassword = await hashPassword(candidate.password);
     const user = await prisma.user.create({
       data: {
         id: userId,
-        email: u.email,
-        name: u.name,
-        role: u.role,
+        email: candidate.email,
+        name: candidate.name,
+        role: candidate.role,
         emailVerified: true,
       },
     });
-    
     await prisma.account.create({
       data: {
         id: crypto.randomUUID(),
@@ -273,63 +373,50 @@ async function main() {
         password: hashedPassword,
       },
     });
-    
-    createdUsers.push(user);
+    createdUsers.push({ id: user.id, email: user.email });
   }
 
-  // 7. Reviews
-  const reviewComments = [
-    "Great product, highly recommend!",
-    "Not bad, but could be better.",
-    "Exactly what I was looking for.",
-    "Terrible quality, broke after a week.",
-    "Good value for the price.",
-    "Fast shipping and works perfectly.",
-    "I love this so much!",
-    "Decent, does the job.",
-  ];
+  const reviewTitles: Record<number, string> = {
+    1: "Disappointed",
+    2: "Not great",
+    3: "It's okay",
+    4: "Good buy",
+    5: "Excellent",
+  };
 
-  const reviewsData: any[] = [];
-  for (const product of createdProducts) {
-    const numReviews = Math.floor(Math.random() * 11) + 2; // 2 to 12
-    const shuffledUsers = [...createdUsers].sort(() => 0.5 - Math.random()).slice(0, numReviews);
-    
+  for (let index = 0; index < createdProducts.length; index++) {
+    const product = createdProducts[index];
+    const numReviews = 2 + (index % 9);
     let totalRating = 0;
-    for (const user of shuffledUsers) {
-      // mostly 4-5, some 3, few 1-2
-      const rand = Math.random();
-      let rating = 5;
-      if (rand < 0.1) rating = 1;
-      else if (rand < 0.2) rating = 2;
-      else if (rand < 0.4) rating = 3;
-      else if (rand < 0.7) rating = 4;
-      
+    const reviewsData: ReviewSeed[] = [];
+    const chosen = createdUsers.slice(0, Math.min(numReviews, createdUsers.length));
+    for (let r = 0; r < chosen.length; r++) {
+      const bucket = (index + r * 3) % 10;
+      const rating = bucket < 1 ? 5 : bucket < 3 ? 4 : bucket < 5 ? 5 : bucket < 7 ? 4 : bucket < 8 ? 3 : bucket < 9 ? 2 : 1;
       totalRating += rating;
-      
       reviewsData.push({
         productId: product.id,
-        userId: user.id,
+        userId: chosen[r].id,
         rating,
-        title: rating >= 4 ? "Awesome!" : rating <= 2 ? "Disappointed" : "It's okay",
-        comment: reviewComments[Math.floor(Math.random() * reviewComments.length)],
+        title: reviewTitles[rating],
+        comment: reviewComments[(index + r) % reviewComments.length],
       });
     }
-    
-    const ratingAvg = Math.round((totalRating / numReviews) * 10) / 10;
+    const ratingAvg = Math.round((totalRating / reviewsData.length) * 10) / 10;
+    await prisma.review.createMany({ data: reviewsData });
     await prisma.product.update({
       where: { id: product.id },
-      data: { ratingAvg, ratingCount: numReviews },
+      data: { ratingAvg, ratingCount: reviewsData.length },
     });
   }
-  await prisma.review.createMany({ data: reviewsData });
 
-  // 8. Orders
-  const shopper = createdUsers.find((u) => u.email === "shopper@amaclone.dev")!;
-  const usRegion = regions.find((r) => r.code === "US")!;
-  
+  const shopper = createdUsers.find((user) => user.email === "shopper@amaclone.dev")!;
+  const usRegion = regions.find((region) => region.code === "US")!;
+
   const address = await prisma.address.create({
     data: {
       userId: shopper.id,
+      label: "Home",
       line1: "123 Main St",
       city: "Seattle",
       postalCode: "98101",
@@ -338,46 +425,40 @@ async function main() {
     },
   });
 
-  const numOrders = Math.floor(Math.random() * 2) + 2; // 2 to 3
   let orderCount = 0;
-  for (let i = 0; i < numOrders; i++) {
-    const numItems = Math.floor(Math.random() * 3) + 2; // 2 to 4
-    const orderProducts = [...createdProducts].sort(() => 0.5 - Math.random()).slice(0, numItems);
-    
+  for (let i = 0; i < 3; i++) {
+    const itemCount = 2 + (i % 3);
+    const orderProducts = createdProducts.filter((_, index) => (index + i) % 37 === 0).slice(0, itemCount);
     let subtotalCents = 0;
-    const itemsData = orderProducts.map((p) => {
-      const quantity = Math.floor(Math.random() * 3) + 1;
-      subtotalCents += p.basePriceCents * quantity;
+    const itemsData = orderProducts.map((product, itemIndex) => {
+      const quantity = 1 + ((i + itemIndex) % 3);
+      subtotalCents += product.basePriceCents * quantity;
       return {
-        productId: p.id,
-        titleSnapshot: p.title,
-        imageSnapshot: p.imageUrl,
-        unitPriceCents: p.basePriceCents,
+        productId: product.id,
+        titleSnapshot: product.title,
+        imageSnapshot: product.imageUrl,
+        unitPriceCents: product.basePriceCents,
         quantity,
       };
     });
-    
     const shippingCents = 500;
-    const totalCents = subtotalCents + shippingCents;
-    
     await prisma.order.create({
       data: {
         userId: shopper.id,
         regionId: usRegion.id,
         addressId: address.id,
         addressSnapshot: {
+          label: address.label,
           line1: address.line1,
           city: address.city,
           postalCode: address.postalCode,
         },
         subtotalCents,
         shippingCents,
-        totalCents,
+        totalCents: subtotalCents + shippingCents,
         currencyCode: "USD",
         fxRateUsed: 1,
-        items: {
-          create: itemsData,
-        },
+        items: { create: itemsData },
       },
     });
     orderCount++;
@@ -390,13 +471,12 @@ async function main() {
   console.log(`ProductRegions: ${productRegionsData.length}`);
   console.log(`Bundles: ${bundlesData.length}`);
   console.log(`Users: ${createdUsers.length}`);
-  console.log(`Reviews: ${reviewsData.length}`);
   console.log(`Orders: ${orderCount}`);
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((error) => {
+    console.error(error);
     process.exit(1);
   })
   .finally(async () => {
