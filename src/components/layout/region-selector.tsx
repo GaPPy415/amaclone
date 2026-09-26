@@ -7,6 +7,7 @@ import { ActiveRegion } from "@/lib/prefs";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectLabel,
   SelectTrigger,
@@ -41,12 +42,14 @@ export function RegionSelector({
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">
-        <SelectLabel>Deliver to</SelectLabel>
-        {regions.map((region) => (
-          <SelectItem key={region.code} value={region.code}>
-            {region.name}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          <SelectLabel>Deliver to</SelectLabel>
+          {regions.map((region) => (
+            <SelectItem key={region.code} value={region.code}>
+              {region.name}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );

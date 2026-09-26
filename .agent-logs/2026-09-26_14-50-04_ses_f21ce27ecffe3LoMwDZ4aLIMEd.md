@@ -5,9 +5,9 @@ author: GaPPy415
 model: opencode-go/deepseek-v4.1-flash
 tool: opencode
 project: amaclone
-total_exchanges: 27
+total_exchanges: 30
 first_prompt_time: 2026-09-26T14:50:04.291Z
-last_prompt_time: 2026-09-26T17:58:30.078Z
+last_prompt_time: 2026-09-26T18:10:27.537Z
 ---
 
 # Session Log - 2026-09-26
@@ -3909,3 +3909,86 @@ Scope notice: This checklist is for App UI (iOS/Android/React Native/Flutter).
 <user-request>
 another thing, when selecting currency or region (and all other select HTML tags as far as i can tell) render with a serif like font for some reason, change that to a sans serif too and clarify the region select pane, this way it looks really generic, it doesn't really indicate to me that it's a region select
 </user-request>
+
+[LOG_ENTRY type=RESPONSE num=27 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T18:03:00.389Z
+model: opencode-go/deepseek-v4.1-flash
+
+Classic native-control issue: browsers don't reliably inherit `font-family` into `<select>`, so it falls back to the UA default. The fix is a global `font: inherit` on form controls, plus converting the region/currency pickers to the styled shadcn `Select` with a clear label. Reading the current components.
+
+Fix is two-part: (1) force form controls to inherit the page font globally, (2) replace the naked `<select>`s in the header with the Radix-based `Select` and label them so the control's purpose is obvious.
+
+Header selectors are now Radix `Select` (no native `<select>`, so no UA font), and the remaining native selects inherit the page font via the new base rule. Building and verifying.
+
+Root cause confirmed fixed: the CSS now has `font: inherit` on form controls (so every native `<select>` inherits sans), and the header pickers are Radix `Select` (the 4 `<select>` in the HTML are Radix's visually-hidden input shims, not rendered controls). "Region"/"Currency" labels are in the trigger. Updating the design doc and committing.
+
+[LOG_ENTRY type=PROMPT num=28 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T18:03:35.150Z
+model: opencode-go/deepseek-v4.1-flash
+
+what happened with the last prompt?
+
+[LOG_ENTRY type=RESPONSE num=28 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T18:04:26.237Z
+model: opencode-go/deepseek-v4.1-flash
+
+You're right that it looked like nothing came back — I ran the fix and the commit, then the turn ended on the tool call without a closing message. The work **did** land; only my wrap-up text was missing. Here's what that prompt actually did:
+
+**Your report:** currency/region selects (and other `<select>` tags) rendered with a serif-looking font, and the region select didn't read as a region picker.
+
+**Root cause:** native form controls don't reliably inherit `font-family` from the page — browsers fall back to a UA default UI font for `<select>`. Nothing in the app was setting a serif font; the control simply wasn't inheriting ours.
+
+**Fixes (commit `2ba033f`):**
+1. **Global base rule** in `globals.css`: `font: inherit` on `input, select, textarea, button`, plus `option` — so *every* native select in the app (filter sort, account region, admin category/parent, product form) now uses the sans stack.
+2. **Header region/currency pickers rebuilt** with the styled Radix `Select` instead of a naked `<select>` — full font/visual control and no UA font path.
+3. **Clarified the controls:** a `MapPin` icon + a small uppercase **Region** label, and a `Coins` icon + **Currency** label, with dropdown group labels "Deliver to" / "Display prices in", and region options now show the full name ("United States") instead of just the code "US".
+4. Updated `design-system/MASTER.md` with the rule so it doesn't regress.
+
+**Verified:** `tsc` 0, build 0; the compiled CSS contains the `font: inherit` rule; the rendered header includes the Region/Currency labels and no visible native select (the 4 `<select>` tags in the HTML are Radix's visually-hidden input shims).
+
+So: prompt handled, committed — I just forgot to tell you. Repo is at `2ba033f`, working tree clean.
+
+Still outstanding (unchanged): **Phase 8** needs your Vercel token + Neon `DATABASE_URL` + OK to push the public repo, and **Phase 9** is your ≤5-min Loom.
+
+[LOG_ENTRY type=PROMPT num=29 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T18:05:25.685Z
+model: opencode-go/deepseek-v4.1-flash
+
+when i open localhost:3000 now i get this error message ## Error Type
+Runtime Error
+
+## Error Message
+`SelectLabel` must be used within `SelectGroup`
+
+
+    at SelectLabel (src/components/ui/select.tsx:97:5)
+    at RegionSelector (src/components/layout/region-selector.tsx:44:9)
+    at SiteHeader (src\components\layout\site-header.tsx:36:15)
+    at RootLayout (src\app\layout.tsx:49:13)
+
+## Code Frame
+   95 | }: React.ComponentProps<typeof SelectPrimitive.Label>) {
+   96 |   return (
+>  97 |     <SelectPrimitive.Label
+      |     ^
+   98 |       data-slot="select-label"
+   99 |       className={cn("px-1.5 py-1 text-xs text-muted-foreground", className)}
+  100 |       {...props}
+
+Next.js version: 16.3.6 (Turbopack) 
+
+[LOG_ENTRY type=RESPONSE num=29 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T18:10:24.454Z
+model: opencode-go/deepseek-v4.1-flash
+
+That's a client-side Radix invariant my HTTP checks couldn't catch (Radix renders the select content in a portal, and I never had a browser). `SelectLabel` must live inside `SelectGroup`. Fixing both selectors.
+
+Build/tsc pass, but the failure is runtime-only, so let me actually load the page in a browser and read the console. Trying the Playwright MCP (different mechanism from the CLI that hung).
+
+Playwright MCP works (no hang) — the refusal is just because nothing is running on 3000 here. Starting the server, then loading the page.
+
+[LOG_ENTRY type=PROMPT num=30 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T18:10:27.537Z
+model: opencode-go/deepseek-v4.1-flash
+
+hung again?

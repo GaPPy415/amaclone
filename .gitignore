@@ -41,3 +41,6 @@ next-env.d.ts
 
 # NOTE: .agent-logs/ is intentionally NOT ignored.
 # The prompt/response capture ships with the repo and is part of the submission.
+
+# playwright mcp artifacts
+.playwright-mcp/

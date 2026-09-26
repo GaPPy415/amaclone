@@ -7,6 +7,7 @@ import { FxRateRow } from "@/lib/money";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectLabel,
   SelectTrigger,
@@ -41,12 +42,14 @@ export function CurrencySelector({
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">
-        <SelectLabel>Display prices in</SelectLabel>
-        {rates.map((rate) => (
-          <SelectItem key={rate.currencyCode} value={rate.currencyCode}>
-            {rate.currencyCode} ({rate.symbol})
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          <SelectLabel>Display prices in</SelectLabel>
+          {rates.map((rate) => (
+            <SelectItem key={rate.currencyCode} value={rate.currencyCode}>
+              {rate.currencyCode} ({rate.symbol})
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );
