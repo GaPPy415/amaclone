@@ -4,13 +4,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function AccountMenu() {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
 
   if (isPending) {
-    return <div className="h-8 w-20 animate-pulse bg-white/10 rounded" />;
+    return <div className="h-8 w-24 animate-pulse rounded bg-white/10" />;
   }
 
   if (!session?.user) {
@@ -27,37 +36,50 @@ export function AccountMenu() {
   }
 
   return (
-    <div className="group relative flex items-center gap-2 cursor-pointer py-2">
-      <User className="size-5" />
-      <span className="text-sm font-medium max-w-[100px] truncate">
-        {session.user.name}
-      </span>
-      
-      <div className="absolute right-0 top-full hidden w-48 flex-col rounded-md bg-card text-card-foreground shadow-lg group-hover:flex border border-border z-50">
-        <Link href="/account" className="px-4 py-2 text-sm hover:bg-muted">
-          Account
-        </Link>
-        <Link href="/orders" className="px-4 py-2 text-sm hover:bg-muted">
-          Orders
-        </Link>
-        <Link href="/wishlist" className="px-4 py-2 text-sm hover:bg-muted">
-          Wishlist
-        </Link>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="h-10 cursor-pointer gap-2 px-2 text-nav-foreground hover:bg-white/10 hover:text-nav-foreground"
+          aria-label="Account menu"
+        >
+          <User className="size-5" />
+          <span className="hidden max-w-[120px] truncate text-sm font-medium sm:inline">
+            {session.user.name}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuLabel className="truncate">
+          {session.user.email}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/account">Account</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/orders">Orders</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/wishlist">Wishlist</Link>
+        </DropdownMenuItem>
         {session.user.role === "admin" && (
-          <Link href="/admin" className="px-4 py-2 text-sm hover:bg-muted">
-            Admin
-          </Link>
+          <DropdownMenuItem asChild>
+            <Link href="/admin">Admin</Link>
+          </DropdownMenuItem>
         )}
-        <button
-          onClick={async () => {
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={async () => {
             await authClient.signOut();
+            router.push("/");
             router.refresh();
           }}
-          className="px-4 py-2 text-sm text-left hover:bg-muted text-destructive"
         >
           Sign out
-        </button>
-      </div>
-    </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
