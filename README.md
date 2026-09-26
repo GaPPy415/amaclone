@@ -104,6 +104,8 @@ docker compose --profile replicas up -d
   init script creating a `replicator` role (`docker/postgres/init/01-replicator.sql`).
 - `replica-1` / `replica-2` run `docker/postgres/replica/start-replica.sh`, which performs
   `pg_basebackup` and starts the standby.
+- **Verified**: with the profile enabled, both standbys reach `streaming` state (visible in
+  `pg_stat_replication` on the primary) and each reports `pg_is_in_recovery() = true`.
 - Validate without starting them: `docker compose --profile replicas config`.
 
 Read/write splitting is not wired into the app (a read replica would be added by pointing
