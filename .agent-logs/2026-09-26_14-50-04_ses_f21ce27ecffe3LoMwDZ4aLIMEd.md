@@ -5,9 +5,9 @@ author: GaPPy415
 model: opencode-go/deepseek-v4.1-flash
 tool: opencode
 project: amaclone
-total_exchanges: 19
+total_exchanges: 20
 first_prompt_time: 2026-09-26T14:50:04.291Z
-last_prompt_time: 2026-09-26T16:59:02.631Z
+last_prompt_time: 2026-09-26T16:59:56.130Z
 ---
 
 # Session Log - 2026-09-26
@@ -748,4 +748,74 @@ Incomplete tasks remain in your todo list. Continue working on the next pending 
 Remaining tasks:
 - [in_progress] Phase 8: Deploy Vercel + Neon, seed prod, signed-out smoke test
 - [pending] Phase 9: Loom walkthrough + submission packaging
+<!-- OMO_INTERNAL_INITIATOR -->
+
+[LOG_ENTRY type=RESPONSE num=19 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T16:59:54.051Z
+model: opencode-go/deepseek-v4.1-flash
+
+Phase 8 is blocked on external credentials (your Vercel + Neon) and a GitHub push you haven't authorized — I won't push or deploy to your accounts without an explicit go. What I *can* do now is remove all remaining friction so deployment is one step, then hand you the shot list. Doing that.
+
+All prep for the last two phases is done and committed (`e8ac8d2`). Both remaining phases are **externally blocked** — I can't finish them without you, and I won't push to your GitHub or deploy to your accounts without an explicit go.
+
+## Phase 8 — ready, waiting on you
+
+Committed: `vercel-build` (`prisma generate && prisma migrate deploy && next build`) and a production `seed` script (no `.env` dependency).
+
+**What I need (either path):**
+
+**Path A — you paste two values, I do the rest:**
+- Vercel token: vercel.com/account/tokens
+- Neon pooled connection string
+
+Then I run, once, with your values:
+```
+npx vercel link --yes --token <TOKEN>
+npx vercel env add DATABASE_URL production        # Neon pooled URL
+npx vercel env add BETTER_AUTH_SECRET production  # long random string
+npx vercel env add BETTER_AUTH_URL production     # https://<project>.vercel.app
+npx vercel env add NEXT_PUBLIC_APP_URL production # same URL
+npx vercel --prod --token <TOKEN>
+DATABASE_URL="<neon>" npx prisma migrate deploy && DATABASE_URL="<neon>" npm run seed
+```
+then smoke-test the signed-out flow against the live URL.
+
+**Path B — you driven:** run `npx vercel login`, create the Neon DB, set the four env vars in the Vercel dashboard; tell me the project name and I'll do migrations/seed + smoke test.
+
+**Separately — GitHub:** no remote is set. `gh` is authenticated as **GaPPy415**. *Say the word and I'll run* `gh repo create amaclone --public --source . --push`. I'm not doing that unasked.
+
+## Phase 9 — Loom (yours to record; here's a ≤5 min shot list)
+
+1. **0:00–0:20** — State tool/model and that capture is live (`.agent-logs/` in the repo).
+2. **0:20–0:50** — Home: category grid, featured, newest. Point out design system + dark-mode toggle.
+3. **0:50–1:30** — Category browse at depth (`Electronics → Computers → Laptops`) + filters; then search `laptop`.
+4. **1:30–2:10** — Product page: price in USD, switch currency → EUR/CHF, switch region → availability changes, reviews, "frequently bought together".
+5. **2:10–2:50** — Guest add-to-cart → sign in → cart merged (quantity summed) → checkout → place order.
+6. **2:50–3:20** — Order detail: snapshot prices/address; orders list; wishlist.
+7. **3:20–4:00** — Admin: dashboard, create/edit a product, promote a user, orders table.
+8. **4:00–4:30** — Show `README.md` cut list and `docker compose up` / replica profile; state the Docker + Vercel/Neon rationale.
+9. **4:30–5:00** — Wrap: what you'd build next, and the deliberate cuts.
+
+Camera on, under 5:00, then paste the link into the walkthrough field with the live URL + repo.
+
+**Bottom line:** product is built, verified phase by phase, and deploy-ready. I'm holding on the two things only you can authorize: the GitHub push and your Vercel/Neon credentials.
+
+[LOG_ENTRY type=PROMPT num=20 session=ses_f21ce27ecffe3LoMwDZ4aLIMEd]
+timestamp: 2026-09-26T16:59:56.130Z
+model: opencode-go/deepseek-v4.1-flash
+
+[SYSTEM DIRECTIVE: OH-MY-OPENCODE - TODO CONTINUATION]
+
+Incomplete tasks remain in your todo list. Continue working on the next pending task.
+
+- Proceed without asking for permission
+- Mark each task complete when finished
+- Do not stop until all tasks are done
+- If you believe all work is already complete, the system is questioning your completion claim. Critically re-examine each todo item from a skeptical perspective, verify the work was actually done correctly, and update the todo list accordingly.
+
+[Status: 14/16 completed, 2 remaining]
+
+Remaining tasks:
+- [in_progress] Phase 8 BLOCKED: awaiting (a) explicit OK to create/push public GitHub repo as GaPPy415, (b) Vercel token, (c) Neon pooled DATABASE_URL. All prep done: vercel-build + seed scripts committed (e8ac8d2).
+- [pending] Phase 9 BLOCKED: Loom walkthrough must be recorded by the user (camera on, <=5 min). Shot list provided in chat.
 <!-- OMO_INTERNAL_INITIATOR -->

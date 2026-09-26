@@ -1,36 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma, Category } from "@prisma/client";
 
-type CategoryNode = Category & { children: CategoryNode[] };
-
-export async function getCategoryTree(): Promise<CategoryNode[]> {
-  const categories = await prisma.category.findMany({
-    orderBy: { position: "asc" },
-  });
-
-  const map = new Map<string, CategoryNode>();
-  const roots: CategoryNode[] = [];
-
-  for (const cat of categories) {
-    map.set(cat.id, { ...cat, children: [] });
-  }
-
-  for (const cat of categories) {
-    const node = map.get(cat.id);
-    if (!node) continue;
-    if (cat.parentId) {
-      const parent = map.get(cat.parentId);
-      if (parent) {
-        parent.children.push(node);
-      }
-    } else {
-      roots.push(node);
-    }
-  }
-
-  return roots;
-}
-
 export async function getCategoryByPath(path: string) {
   const category = await prisma.category.findFirst({
     where: { path },
