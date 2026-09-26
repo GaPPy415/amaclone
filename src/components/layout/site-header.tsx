@@ -72,6 +72,11 @@ export async function SiteHeader() {
         <div className="pb-3 md:hidden">
           <SearchBar />
         </div>
+
+        <div className="flex items-center gap-4 pb-3 lg:hidden">
+          <RegionSelector regions={regions} currentCode={activeRegion.code} />
+          <CurrencySelector rates={rates} currentCode={activeCurrency} />
+        </div>
       </div>
     </header>
   );
