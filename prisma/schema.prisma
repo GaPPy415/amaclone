@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// better-auth core tables. Field and @@map names follow the adapter contract.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  role       String    @default("user")
+  banned     Boolean?
+  banReason  String?
+  banExpires DateTime?
+
+  sessions Session[]
+  accounts Account[]
+
+  addresses  Address[]
+  orders     Order[]
+  reviews    Review[]
+  wishlist   WishlistItem[]
+  cart       Cart?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy String?
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------------
+// Domain
+// ---------------------------------------------------------------------------
+
+model Region {
+  id           String  @id @default(cuid())
+  code         String  @unique
+  name         String
+  currencyCode String
+  isActive     Boolean @default(true)
+
+  products  ProductRegion[]
+  addresses Address[]
+  orders    Order[]
+}
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String?
+  line1      String
+  line2      String?
+  city       String
+  postalCode String
+  regionId   String
+  region     Region  @relation(fields: [regionId], references: [id])
+  isDefault  Boolean @default(false)
+  createdAt  DateTime @default(now())
+
+  orders Order[]
+
+  @@index([userId])
+}
+
+model Category {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String  @unique
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  path     String  @default("")
+  position Int     @default(0)
+
+  products Product[]
+
+  @@index([parentId])
+  @@index([path])
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  description    String
+  brand          String?
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id])
+  basePriceCents Int
+  imageUrl       String
+  ratingAvg      Float    @default(0)
+  ratingCount    Int      @default(0)
+  isActive       Boolean  @default(true)
+  featured       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  regions      ProductRegion[]
+  reviews      Review[]
+  orderItems   OrderItem[]
+  wishlistedBy WishlistItem[]
+  cartItems    CartItem[]
+  bundlesA     Bundle[]       @relation("BundleA")
+  bundlesB     Bundle[]       @relation("BundleB")
+
+  @@index([categoryId])
+  @@index([title])
+}
+
+model ProductRegion {
+  productId    String
+  regionId     String
+  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  region       Region  @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  available    Boolean @default(true)
+  stock        Int     @default(0)
+  shippingDays Int     @default(5)
+
+  @@id([productId, regionId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  title     String?
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@index([productId, createdAt])
+}
+
+model Cart {
+  id         String   @id @default(cuid())
+  userId     String?  @unique
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestToken String?  @unique
+  updatedAt  DateTime @updatedAt
+
+  items CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  productId String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int     @default(1)
+
+  @@unique([cartId, productId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  status          String   @default("placed")
+  regionId        String
+  region          Region   @relation(fields: [regionId], references: [id])
+  addressId       String?
+  address         Address? @relation(fields: [addressId], references: [id])
+  addressSnapshot Json
+  subtotalCents   Int
+  shippingCents   Int      @default(0)
+  totalCents      Int
+  currencyCode    String   @default("USD")
+  fxRateUsed      Float    @default(1)
+  createdAt       DateTime @default(now())
+
+  items OrderItem[]
+
+  @@index([userId, createdAt])
+}
+
+model OrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+  titleSnapshot  String
+  imageSnapshot  String
+  unitPriceCents Int
+  quantity       Int
+
+  @@index([orderId])
+}
+
+model FxRate {
+  currencyCode String   @id
+  rateFromUsd  Float
+  symbol       String
+  updatedAt    DateTime @default(now())
+}
+
+model Bundle {
+  id         String  @id @default(cuid())
+  productAId String
+  productBId String
+  score      Float   @default(0)
+  productA   Product @relation("BundleA", fields: [productAId], references: [id], onDelete: Cascade)
+  productB   Product @relation("BundleB", fields: [productBId], references: [id], onDelete: Cascade)
+
+  @@unique([productAId, productBId])
+}
