@@ -15,7 +15,7 @@ export function RemoveFromWishlistButton({ productId }: { productId: string }) {
     startTransition(async () => {
       const result = await toggleWishlist(productId);
       if (!result.ok) {
-        toast.error(result.message ?? "Could not update your wishlist");
+        toast.error("Could not update your wishlist");
         return;
       }
       toast.success("Removed from wishlist");
