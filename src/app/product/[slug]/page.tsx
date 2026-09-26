@@ -11,6 +11,9 @@ import { rateFor } from "@/lib/money";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
 import { isWishlisted } from "@/lib/wishlist";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { ReviewForm } from "@/components/product/review-form";
 
 export default async function ProductPage({
   params,
@@ -43,6 +46,13 @@ export default async function ProductPage({
   const region = product.regions[0];
   const isAvailable = region?.available ?? false;
   const inStock = (region?.stock ?? 0) > 0;
+
+  const user = await getCurrentUser();
+  const myReview = user
+    ? await prisma.review.findUnique({
+        where: { productId_userId: { productId: product.id, userId: user.id } },
+      })
+    : null;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -168,6 +178,31 @@ export default async function ProductPage({
           </div>
 
           <div className="flex-1 flex flex-col gap-6">
+            {!user ? (
+              <div className="rounded-lg border border-border bg-card p-6">
+                <p className="text-sm text-muted-foreground">
+                  <Link
+                    href={`/sign-in?next=/product/${product.slug}`}
+                    className="text-primary hover:underline"
+                  >
+                    Sign in
+                  </Link>{" "}
+                  to write a review.
+                </p>
+              </div>
+            ) : myReview ? (
+              <div className="rounded-lg border border-border bg-card p-6">
+                <p className="text-sm text-muted-foreground">
+                  You have already reviewed this product.
+                </p>
+              </div>
+            ) : (
+              <ReviewForm
+                productId={product.id}
+                nextPath={`/product/${product.slug}`}
+              />
+            )}
+
             {reviews.length === 0 ? (
               <p className="text-muted-foreground">No reviews yet.</p>
             ) : (
