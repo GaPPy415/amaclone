@@ -26,25 +26,32 @@ flashy. Product imagery and price hierarchy carry the page.
 
 ## 2. Tokens (defined in `src/app/globals.css`)
 
+Pastel-led palette. Prices are **neutral** (foreground), never red — hierarchy comes from
+weight and size, not alarming color. Dark mode is a mid-tone slate-lavender, not near-black.
+
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--background` / `--foreground` | warm white / slate-900 | deep navy-slate / near-white | page base |
-| `--card` | white | raised navy | surfaces, product tiles |
-| `--primary` | orange `oklch(0.74 0.17 62)` | lighter orange `oklch(0.78 0.16 65)` | primary CTA |
-| `--primary-foreground` | **dark** `oklch(0.2 0.02 60)` | dark | text on orange |
-| `--nav` / `--nav-foreground` | navy `oklch(0.24 0.03 255)` / near-white | near-black navy / near-white | header, footer |
-| `--price` | deep red `oklch(0.48 0.19 27)` | brighter red | price display |
+| `--background` / `--foreground` | lavender-white / ink `oklch(0.26 0.03 285)` | mid slate-lavender `oklch(0.31 0.02 285)` / near-white | page base |
+| `--card` | white | raised slate `oklch(0.36 0.022 285)` | surfaces, product tiles |
+| `--primary` | pastel apricot `oklch(0.87 0.085 55)` | pastel apricot `oklch(0.84 0.09 60)` | primary CTA |
+| `--primary-foreground` | **dark** `oklch(0.3 0.05 45)` | dark `oklch(0.28 0.05 50)` | text on primary |
+| `--nav` / `--nav-foreground` | muted indigo `oklch(0.44 0.06 285)` / near-white | deep indigo `oklch(0.25 0.026 285)` / near-white | header, footer |
+| `--price` | **ink** `oklch(0.28 0.03 285)` | **near-white** `oklch(0.96 0.012 300)` | price display (neutral, not red) |
+| `--accent` | pastel mint `oklch(0.93 0.052 180)` | muted mint `oklch(0.45 0.05 190)` | highlights |
 | `--success` | green | green | in-stock, success |
 | `--destructive` | red | red | errors, remove |
-| `--muted-foreground` | slate-500 | slate-400 | secondary text |
+| `--muted-foreground` | `oklch(0.52 0.03 288)` | `oklch(0.8 0.02 290)` | secondary text |
+| `--radius` | `0.75rem` | `0.75rem` | softer corners throughout |
 
 **Accessibility-critical rule:** `--primary-foreground` is intentionally **dark**, not white.
-White on this orange fails 4.5:1. Do not "fix" it to white.
+White on the pastel primary fails 4.5:1. Do not "fix" it to white.
 
 ## 3. Typography
 
-- Family: **Geist Sans** (body + headings), **Geist Mono** (prices/order numbers/tabular data
-  where alignment matters). Loaded via `next/font` in `src/app/layout.tsx`.
+- Family: **Plus Jakarta Sans** (headings), **Geist Sans** (body), **Geist Mono** (order
+  numbers/tabular data only). All sans-serif — no serif anywhere. Loaded via `next/font` in
+  `src/app/layout.tsx` and mapped in `globals.css` as `--font-heading`, `--font-sans`,
+  `--font-mono`. Headings (`h1`–`h4`) use `--font-heading` via a base-layer rule.
 - Scale: 12 / 14 / 16 / 18 / 20 / 24 / 32 / 40.
 - Body 16px minimum, line-height 1.5–1.75, measure 60–75 chars on desktop.
 - Weight hierarchy: headings 600–700, labels 500, body 400.

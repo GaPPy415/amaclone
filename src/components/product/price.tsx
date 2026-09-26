@@ -12,7 +12,7 @@ export function Price({
   className?: string;
 }) {
   return (
-    <span className={`tabular-nums font-mono font-bold text-price ${className}`}>
+    <span className={`tabular-nums font-semibold text-price ${className}`}>
       {formatMoney(usdCents, currencyCode, rateFromUsd)}
     </span>
   );
